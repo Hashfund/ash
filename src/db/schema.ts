@@ -10,6 +10,7 @@ export const mints = pgTable("mints", {
   timestamp: timestamp("timestamp").notNull(),
   reserve: text("reserve").notNull(),
   totalSupply: text("totalSupply").notNull(),
+  signature: text("signature").notNull(),
 });
 
 export const boundingCurves = pgTable("boundingCurve", {
@@ -21,6 +22,7 @@ export const boundingCurves = pgTable("boundingCurve", {
   initialPrice: text("initialPrice").notNull(),
   maximumMarketCap: text("maximumMarketCap").notNull(),
   timestamp: timestamp("timestamp").notNull(),
+  signature: text("signature").notNull(),
 });
 
 export const swaps = pgTable("swap", {
@@ -34,6 +36,7 @@ export const swaps = pgTable("swap", {
   marketCap: text("marketCap").notNull(),
   timestamp: timestamp("timestamp").notNull(),
   payer: text("payer").notNull(),
+  signature: text("signature").notNull(),
 });
 
 export const mintsRelations = relations(mints, ({ one }) => ({

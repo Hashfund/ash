@@ -21,3 +21,10 @@ export const getAllSwapByMint = function (mint: string) {
     orderBy: desc(swaps.timestamp),
   });
 };
+
+export const getLastestSwapByMint = function (mint: string) {
+  return db.query.swaps.findFirst({
+    where: eq(swaps.mint, mint),
+    orderBy: desc(swaps.timestamp),
+  });
+};

@@ -5,6 +5,7 @@ import {
 } from "utils/pagination";
 import { getAllMint, getMint } from "./mint.controller";
 import { resolveMetadataUri } from "utils/metadata";
+import { getLastestSwapByMint } from "modules/swap/swap.controller";
 
 const getAllMintRoute = async (
   req: FastifyRequest<{ Querystring: LimitOffsetPaginationQuery }>
@@ -19,10 +20,16 @@ const getAllMintRoute = async (
 
   return paginator.getResponse(
     await Promise.all(
-      results.map(async (result) => ({
-        ...results,
-        metadata: await resolveMetadataUri(result.uri),
-      }))
+      results.map(async (result) => {
+        const metadata = await resolveMetadataUri(result.uri);
+        const lastestSwap = await getLastestSwapByMint(result.id);
+
+        return {
+          ...result,
+          metadata,
+          marketCap: lastestSwap?.marketCap ?? 0,
+        };
+      })
     )
   );
 };
@@ -40,7 +47,7 @@ const getMintRoute = async (
   if (mint)
     return {
       ...mint,
-      metadata: resolveMetadataUri(mint.uri),
+      metadata: await resolveMetadataUri(mint.uri),
     };
 
   return reply.status(400).send({

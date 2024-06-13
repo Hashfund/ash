@@ -1,5 +1,5 @@
 {
-  "id": "8a7a6df3-4070-451b-9764-c7a006aa56a6",
+  "id": "65058d70-9d4f-4b6d-b87a-2470c8241e04",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -35,6 +35,12 @@
         "timestamp": {
           "name": "timestamp",
           "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "signature": {
+          "name": "signature",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         }
@@ -117,6 +123,12 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "signature": {
+          "name": "signature",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         }
       },
       "indexes": {},
@@ -172,6 +184,12 @@
         },
         "payer": {
           "name": "payer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "signature": {
+          "name": "signature",
           "type": "text",
           "primaryKey": false,
           "notNull": true

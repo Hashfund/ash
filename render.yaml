@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: hashfund-ash
+    runtime: node
+    plan: starter
+    autoDeploy: true
+    buildCommand: bun install
+    startCommand: bun run start
+    envVars:
+      - fromGroup: hashfund-ash
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hashfund
+          property: connectionString
+    domains:
+      - "hashfund.onrender.com"
+  - type: worker
+    runtime: node
+    name: hashfund-ash-worker
+    plan: standard
+    autoDeploy: true 
+    buildCommand: bun install
+    startCommand: bun run worker
+    envVars:
+      - fromGroup: hashfund-ash
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hashfund
+          property: connectionString
+databases:
+  - name: hashfund
+    databaseName: hashfund
+    user: admin
+    plan: starter

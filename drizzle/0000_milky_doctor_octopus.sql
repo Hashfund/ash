@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS "boundingCurve" (
 	"initialPrice" text NOT NULL,
 	"maximumMarketCap" text NOT NULL,
 	"timestamp" timestamp NOT NULL,
+	"signature" text NOT NULL,
 	CONSTRAINT "boundingCurve_mint_unique" UNIQUE("mint")
 );
 --> statement-breakpoint
@@ -15,7 +16,8 @@ CREATE TABLE IF NOT EXISTS "mints" (
 	"creator" text NOT NULL,
 	"timestamp" timestamp NOT NULL,
 	"reserve" text NOT NULL,
-	"totalSupply" text NOT NULL
+	"totalSupply" text NOT NULL,
+	"signature" text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "swap" (
@@ -26,7 +28,8 @@ CREATE TABLE IF NOT EXISTS "swap" (
 	"tradeDirection" integer NOT NULL,
 	"marketCap" text NOT NULL,
 	"timestamp" timestamp NOT NULL,
-	"payer" text NOT NULL
+	"payer" text NOT NULL,
+	"signature" text NOT NULL
 );
 --> statement-breakpoint
 DO $$ BEGIN

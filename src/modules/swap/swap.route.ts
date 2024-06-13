@@ -12,6 +12,7 @@ const getAllSwapByMintRoute = function (
   return getAllSwapByMint(mint);
 };
 
+
 export const swapRoutes = (fastify: FastifyInstance) => {
   fastify.route({
     method: "GET",

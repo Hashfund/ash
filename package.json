@@ -3,9 +3,11 @@
   "module": "dist/src/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js",
-    "serve": "bun run build && node dist/index.js",
-    "dev": "bun run src/index.ts"
+    "node:start": "node dist/index.js",
+    "start": "bun run src/index.ts",
+    "worker": "bun run src/worker.ts",
+    "node:worker": "node dist/worker.js",
+    "migrate": "bun drizzle-kit generate && bun drizzle-kit migrate"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -15,6 +17,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@fastify/cors": "^9.0.1",
     "@hashfund/program": "^2.5.0",
     "@solana/web3.js": "^1.92.3",
     "@tsconfig/node16": "^16.1.3",
@@ -26,6 +29,7 @@
     "drizzle-zod": "^0.5.1",
     "fastify": "^4.26.2",
     "fs": "^0.0.1-security",
+    "imagekit": "^5.0.1",
     "postgres": "^3.4.4",
     "zod": "^3.23.8"
   }
