@@ -5,7 +5,7 @@ services:
     plan: starter
     autoDeploy: true
     buildCommand: bun install
-    startCommand: bun run start
+    startCommand: bun run migrate && bun run start
     envVars:
       - fromGroup: hashfund-ash
       - key: DATABASE_URL
@@ -20,7 +20,7 @@ services:
     plan: standard
     autoDeploy: true 
     buildCommand: bun install
-    startCommand: bun run worker
+    startCommand: bun run migrate && bun run worker
     envVars:
       - fromGroup: hashfund-ash
       - key: DATABASE_URL
