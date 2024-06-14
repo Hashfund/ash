@@ -18,7 +18,8 @@
   },
   "dependencies": {
     "@fastify/cors": "^9.0.1",
-    "@hashfund/program": "^2.5.0",
+    "@hashfund/program": "^2.10.0",
+    "@solana/spl-token": "^0.4.6",
     "@solana/web3.js": "^1.92.3",
     "@tsconfig/node16": "^16.1.3",
     "@tsconfig/recommended": "^1.0.6",

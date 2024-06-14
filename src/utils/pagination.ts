@@ -1,3 +1,5 @@
+import { FastifyRequest } from "fastify";
+
 export type LimitOffsetPaginationQuery = {
   offset: number;
   limit: number;
@@ -28,7 +30,7 @@ export class LimitOffsetPagination {
 
   getResponse<T>(results: T[]) {
     return {
-      next: results.length > 0 ? this.nextURL() : null,
+      next: results.length > this.limit ? this.nextURL() : null,
       previous: this.offset > 0 ? this.previousURL() : null,
       results,
     };
@@ -40,3 +42,6 @@ export class LimitOffsetPagination {
       : this.offset;
   }
 }
+
+export const buildURLFromRequest = (req: FastifyRequest) =>
+  req.protocol + "://" + req.hostname + req.originalUrl;

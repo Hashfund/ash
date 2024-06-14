@@ -1,36 +1,25 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+
 import {
+  buildURLFromRequest,
   LimitOffsetPagination,
   LimitOffsetPaginationQuery,
 } from "utils/pagination";
-import { getAllMint, getMint } from "./mint.controller";
-import { resolveMetadataUri } from "utils/metadata";
-import { getLastestSwapByMint } from "modules/swap/swap.controller";
+import { getAllMint, getMint, getMintWithExtraInfo } from "./mint.controller";
 
 const getAllMintRoute = async (
   req: FastifyRequest<{ Querystring: LimitOffsetPaginationQuery }>
 ) => {
   const paginator = new LimitOffsetPagination(
-    req.protocol + "://" + req.hostname + req.originalUrl,
+    buildURLFromRequest(req),
     req.query.limit ?? 16,
     req.query.offset ?? 0
   );
 
-  const results = await getAllMint(paginator.limit, paginator.getOffset());
+  const mints = await getAllMint(paginator.limit, paginator.getOffset());
 
   return paginator.getResponse(
-    await Promise.all(
-      results.map(async (result) => {
-        const metadata = await resolveMetadataUri(result.uri);
-        const lastestSwap = await getLastestSwapByMint(result.id);
-
-        return {
-          ...result,
-          metadata,
-          marketCap: lastestSwap?.marketCap ?? 0,
-        };
-      })
-    )
+    await Promise.all(mints.map(getMintWithExtraInfo))
   );
 };
 
@@ -44,11 +33,7 @@ const getMintRoute = async (
 ) => {
   const { id } = req.params;
   const mint = await getMint(id);
-  if (mint)
-    return {
-      ...mint,
-      metadata: await resolveMetadataUri(mint.uri),
-    };
+  if (mint) return getMintWithExtraInfo(mint);
 
   return reply.status(400).send({
     message: "Mint with address not found",

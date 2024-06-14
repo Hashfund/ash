@@ -15,10 +15,16 @@ export const createSwap = function (value: z.infer<typeof insertSwapSchema>) {
   return db.insert(swaps).values(value).returning();
 };
 
-export const getAllSwapByMint = function (mint: string) {
+export const getAllSwapByMint = function (
+  mint: string,
+  limit: number,
+  offset: number
+) {
   return db.query.swaps.findMany({
     where: eq(swaps.mint, mint),
     orderBy: desc(swaps.timestamp),
+    limit,
+    offset,
   });
 };
 

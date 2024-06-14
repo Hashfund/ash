@@ -1,13 +1,10 @@
 import { BN } from "bn.js";
 import { HASHFUND_PROGRAM_ID } from "@hashfund/program";
-import { Connection, Logs, PublicKey } from "@solana/web3.js";
+import { Connection, Logs } from "@solana/web3.js";
 
-import { parseLogs } from "./utils/log";
-import { createMint } from "./modules/mint/mint.controller";
-import {
-  createBoundingCurve,
-  createSwap,
-} from "./modules/swap/swap.controller";
+import { parseLogs } from "utils/log";
+import { createMint } from "modules/mint/mint.controller";
+import { createBoundingCurve, createSwap } from "modules/swap/swap.controller";
 import { HTTP_RPC_ENDPOINT, WSS_RPC_ENDPOINT } from "config";
 
 const onLogs = async ({ logs, signature }: Logs) => {
@@ -65,7 +62,7 @@ async function run() {
   });
 
   connection.onLogs(
-    new PublicKey(HASHFUND_PROGRAM_ID),
+    HASHFUND_PROGRAM_ID,
     async (logs) => {
       console.log("signature=", logs.signature);
 
