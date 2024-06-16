@@ -6,7 +6,7 @@ import {
   LimitOffsetPagination,
   LimitOffsetPaginationQuery,
 } from "utils/pagination";
-import { getAllSwapByMint, getSwapsGraphByMint } from "./swap.controller";
+import { getAllSwapByMint, getSwapsGraphByMint, getSwapsVolumeGraphByMint } from "./swap.controller";
 
 type GetAllSwapByMintParams = {
   mint: string;
@@ -33,6 +33,7 @@ const getAllSwapByMintRoute = async function (
 type SwapGraphQuery = {
   to: string;
   from: string;
+  type?: "volume" | "marketcap";
 };
 
 type SwapGraphParams = {
@@ -59,10 +60,13 @@ const getSwapsGraphByMintRoutes = function (
   reply: FastifyReply
 ) {
   const { mint } = req.params;
+  const type = req.query.type ?? "marketcap";
 
   return QuerySchema.parseAsync(req.query)
     .then((query) =>
-      getSwapsGraphByMint(mint, new Date(query.from), new Date(query.to))
+      type === "marketcap"
+        ? getSwapsGraphByMint(mint, new Date(query.from), new Date(query.to))
+        : getSwapsVolumeGraphByMint(mint, new Date(query.from), new Date(query.to))
     )
     .catch((error) =>
       reply.status(400).send({

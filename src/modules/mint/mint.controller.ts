@@ -1,4 +1,4 @@
-import BN from "bn.js";
+import BN, { min } from "bn.js";
 
 import { z } from "zod";
 import { and, desc, eq, gte } from "drizzle-orm";
@@ -7,6 +7,7 @@ import { db } from "db";
 import { mints, swaps } from "db/schema";
 import type { insertMintSchema } from "db/zod";
 import { resolveMetadataUri } from "utils/metadata";
+import { NATIVE_MINT_DECIMALS } from "config";
 
 export const createMint = function (values: z.infer<typeof insertMintSchema>) {
   return db.insert(mints).values(values).returning().execute();
@@ -51,7 +52,7 @@ export const getMintWithExtraInfo = async function (
 
   const last24HrVolume = last24HrSwapIn
     .map(({ amountIn }) => new BN(amountIn, "hex"))
-    .reduceRight((a, b) => a.add(b));
+    .reduce((a, b) => a.add(b), new BN(0));
 
   const totalVolumeIn = await db
     .select({
@@ -63,7 +64,7 @@ export const getMintWithExtraInfo = async function (
 
   const totalVolume = totalVolumeIn
     .map(({ amountIn }) => new BN(amountIn, "hex"))
-    .reduceRight((a, b) => a.add(b));
+    .reduce((a, b) => a.add(b), new BN(0));
 
   const last24HrVolumeChange = totalVolume.sub(last24HrVolume);
   const last24HrVolumeChangePercentage = last24HrVolumeChange
@@ -79,15 +80,15 @@ export const getMintWithExtraInfo = async function (
 
   const marketCap = lastSwapMarketCap
     .map((data) => new BN(data.marketCap, "hex"))
-    .reduceRight((a, b) => a.add(b));
+    .reduce((a, b) => a.add(b), new BN(0));
 
   return {
     ...mint,
     metadata,
-    marketCap: marketCap.toString("hex"),
-    totalVolume: totalVolume.toString("hex"),
-    last24HrVolume: last24HrVolume.toString("hex"),
-    last24HrVolumeChange: last24HrVolumeChange.toString("hex"),
-    last24HrVolumeChangePercentage: last24HrVolumeChangePercentage.toNumber(),
+    marketCap: marketCap,
+    totalVolume: totalVolume,
+    last24HrVolume: last24HrVolume,
+    last24HrVolumeChange: last24HrVolumeChange,
+    last24HrVolumeChangePercentage: last24HrVolumeChangePercentage,
   };
 };
