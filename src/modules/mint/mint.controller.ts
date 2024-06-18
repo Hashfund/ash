@@ -47,7 +47,13 @@ export const getMintWithExtraInfo = async function (
       amountIn: swaps.amountIn,
     })
     .from(swaps)
-    .where(and(gte(swaps.timestamp, last24Hr), eq(swaps.tradeDirection, 0)))
+    .where(
+      and(
+        eq(swaps.mint, mint.id),
+        gte(swaps.timestamp, last24Hr),
+        eq(swaps.tradeDirection, 0)
+      )
+    )
     .execute();
 
   const last24HrVolume = last24HrSwapIn
@@ -59,7 +65,7 @@ export const getMintWithExtraInfo = async function (
       amountIn: swaps.amountIn,
     })
     .from(swaps)
-    .where(eq(swaps.tradeDirection, 0))
+    .where(and(eq(swaps.mint, mint.id), eq(swaps.tradeDirection, 0)))
     .execute();
 
   const totalVolume = totalVolumeIn
@@ -74,6 +80,7 @@ export const getMintWithExtraInfo = async function (
   const lastSwapMarketCap = await db
     .select({ marketCap: swaps.marketCap })
     .from(swaps)
+    .where(eq(swaps.mint, mint.id))
     .orderBy(desc(swaps.timestamp))
     .limit(1)
     .execute();
