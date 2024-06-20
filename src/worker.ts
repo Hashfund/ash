@@ -9,7 +9,7 @@ import { createMint } from "modules/mint/mint.controller";
 import { getOrCreateUser } from "modules/user/user.controller";
 import { createBoundingCurve, createSwap } from "modules/swap/swap.controller";
 
-const onLogs = async ({ logs, signature }: Logs) => {
+export const onLogs = async ({ logs, signature }: Logs) => {
   const event = parseLogs(logs);
 
   if (event.Mint && event.MintTo) {
@@ -78,8 +78,8 @@ async function run() {
   );
 }
 
-run()
-  .catch(() => {
-    process.exit(1);
-  })
-  .then(() => console.log("Running worker in background..."));
+// run()
+//   .catch(() => {
+//     process.exit(1);
+//   })
+//   .then(() => console.log("Running worker in background..."));

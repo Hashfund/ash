@@ -37,26 +37,18 @@ export const createMintsQuery = (filter: Filter) => {
     ? moment(filter.from).toDate()
     : moment().subtract(1, "day").toDate();
 
-  const lastSwap = db
+  const qLastSwap = db
     .select({
       mint: swaps.mint,
       marketCap: swaps.marketCap,
     })
     .from(swaps)
-    .limit(1)
     .orderBy(desc(swaps.timestamp))
-    .as("lastSwap");
+    .as("qLastSwap");
 
-  return db
+  const qSwaps = db
     .select({
-      ...getTableColumns(mints),
-      totalSupply: toBigInt(mints.totalSupply),
-      boundingCurve: {
-        ...getTableColumns(boundingCurves),
-        initialPrice: toBigInt(boundingCurves.initialPrice),
-        maximumMarketCap: toBigInt(boundingCurves.maximumMarketCap),
-      },
-      marketCap: coalesce(toBigInt(lastSwap.marketCap), 0),
+      mint: swaps.mint,
       volumeIn: coalesce(
         sum(
           caseWhen(
@@ -74,7 +66,7 @@ export const createMintsQuery = (filter: Filter) => {
           )
         ),
         0
-      ),
+      ).as("volume_out"),
       volumeInFrom: coalesce(
         sum(
           caseWhen(
@@ -87,7 +79,7 @@ export const createMintsQuery = (filter: Filter) => {
           )
         ),
         0
-      ),
+      ).as("volume_in_from"),
       volumeOutFrom: coalesce(
         sum(
           caseWhen(
@@ -100,13 +92,30 @@ export const createMintsQuery = (filter: Filter) => {
           )
         ),
         0
-      ),
+      ).as("voume_out_from"),
     })
     .from(swaps)
-    .innerJoin(lastSwap, eq(swaps.mint, lastSwap.mint))
-    .rightJoin(boundingCurves, eq(swaps.mint, boundingCurves.mint))
-    .rightJoin(mints, eq(swaps.mint, mints.id))
-    .groupBy(swaps.mint, mints.id, lastSwap.marketCap, boundingCurves.id);
+    .groupBy(swaps.mint)
+    .as("qSwaps");
+
+  return db
+    .select({
+      ...getTableColumns(mints),
+      volumeIn: qSwaps.volumeIn,
+      volumeOut: qSwaps.volumeOut,
+      volumeInFrom: qSwaps.volumeInFrom,
+      volumeOutFrom: qSwaps.volumeOutFrom,
+      marketCap: toBigInt(qLastSwap.marketCap),
+      boundingCurve: {
+        ...getTableColumns(boundingCurves),
+        initialPrice: toBigInt(boundingCurves.initialPrice),
+        maximumMarketCap: toBigInt(boundingCurves.maximumMarketCap),
+      },
+    })
+    .from(mints)
+    .innerJoin(boundingCurves, eq(boundingCurves.mint, mints.id))
+    .innerJoin(qSwaps, eq(qSwaps.mint, mints.id))
+    .innerJoin(qLastSwap, eq(qLastSwap.mint, mints.id));
 };
 
 export const getAllMint = (

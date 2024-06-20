@@ -1,12 +1,19 @@
-// import {clusterApiUrl, Connection} from "@solana/web3.js";
-// import {parseLogs} from "../src/utils/log";
-// async function main(){
-//     const connection = new Connection(clusterApiUrl("devnet"));
-//     const transaction = await connection.getParsedTransaction("2u3pNMicK7agA8c9URrQSPhW8ykeewgEFVjYDLDK7TGijDAxL4i1o5QXWaguu99S1uke26YQaEocbvHumwC4tFVi");
-//     const logs = transaction!.meta!.logMessages!;
-//     const events = parseLogs(logs);
-//     console.log(events.InitializeCurve?.bounding_curve.toBase58())
-//     console.log(events.InitializeCurve?.initial_price.toNumber())
-// }
+import { clusterApiUrl, Connection } from "@solana/web3.js";
+import { onLogs } from "../src/worker";
+async function main() {
+  const connection = new Connection(clusterApiUrl("devnet"));
+  const transaction = await connection.getParsedTransaction(
+    "4pZC7kheP4zEQZh8sdQSWmo2Q6G1izUQ88aufih9t3GQPKBf1yumCEjC9yDt4EPKuQKnsfj6e2yXPTaz7KRyUwrW"
+  );
+  const logs = transaction!.meta!.logMessages!;
+  const events = onLogs({
+    err: null,
+    logs,
+    signature:
+      "4pZC7kheP4zEQZh8sdQSWmo2Q6G1izUQ88aufih9t3GQPKBf1yumCEjC9yDt4EPKuQKnsfj6e2yXPTaz7KRyUwrW",
+  });
 
-// main()
+  
+}
+
+main();
