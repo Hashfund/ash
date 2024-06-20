@@ -1,9 +1,9 @@
 import type { z } from "zod";
 import { desc, eq, sql, sum } from "drizzle-orm";
 
-import { caseWhen, db, toBigInt } from "../../db";
-import { boundingCurves, swaps } from "../../db/schema";
-import type { insertBoundingCurveSchema, insertSwapSchema } from "../../db/zod";
+import { caseWhen, coalesce, db, toBigInt } from "db";
+import { boundingCurves, swaps } from "db/schema";
+import type { insertBoundingCurveSchema, insertSwapSchema } from "db/zod";
 
 export const createBoundingCurve = function (
   value: z.infer<typeof insertBoundingCurveSchema>
@@ -35,8 +35,9 @@ export const getAllSwapByMint = function (
     .select({
       marketCap: lastSwap.marketCap,
       timestamp: sql`date(${swaps.timestamp})`.as("date"),
-      volumeIn: sum(
-        caseWhen(eq(swaps.tradeDirection, 0), toBigInt(swaps.amountIn))
+      volumeIn: coalesce(
+        sum(caseWhen(eq(swaps.tradeDirection, 0), toBigInt(swaps.amountIn))),
+        0
       ),
     })
     .from(swaps)

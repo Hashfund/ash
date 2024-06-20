@@ -1,8 +1,9 @@
-import { caseWhen, db, toBigInt } from "db";
+import { z } from "zod";
+import { desc, eq, sql, SQL, sum } from "drizzle-orm";
+
 import { swaps, users } from "db/schema";
 import { insertUserSchema } from "db/zod";
-import { desc, eq, sql, SQL, SQLWrapper, sum } from "drizzle-orm";
-import { z } from "zod";
+import { caseWhen, coalesce, db, toBigInt } from "db";
 
 export const getAllUsers = (
   where: SQL | undefined,
@@ -53,11 +54,13 @@ export const getUsersLeaderboard = () => {
   return db
     .select({
       user: users,
-      volumeIn: sum(
-        caseWhen(eq(swaps.tradeDirection, 0), toBigInt(swaps.amountIn))
+      volumeIn: coalesce(
+        sum(caseWhen(eq(swaps.tradeDirection, 0), toBigInt(swaps.amountIn))),
+        0
       ).as("volume_in"),
-      volumeOut: sum(
-        caseWhen(eq(swaps.tradeDirection, 1), toBigInt(swaps.amountOut))
+      volumeOut: coalesce(
+        sum(caseWhen(eq(swaps.tradeDirection, 1), toBigInt(swaps.amountOut))),
+        0
       ).as("volume_out"),
     })
     .from(swaps)

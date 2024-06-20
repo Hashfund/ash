@@ -15,10 +15,11 @@ import {
   sum,
 } from "drizzle-orm";
 
-import { caseWhen, date, db, hour, toBigInt } from "db";
-import type { insertMintSchema } from "db/zod";
-import { boundingCurves, mints, swaps, users } from "db/schema";
 import { buildRange, TimeUnit } from "utils/date";
+
+import type { insertMintSchema } from "db/zod";
+import { caseWhen, coalesce, date, db, hour, toBigInt } from "db";
+import { boundingCurves, mints, swaps, users } from "db/schema";
 
 export const createMint = function (values: z.infer<typeof insertMintSchema>) {
   return db.insert(mints).values(values).returning().execute();
@@ -55,38 +56,50 @@ export const createMintsQuery = (filter: Filter) => {
         initialPrice: toBigInt(boundingCurves.initialPrice),
         maximumMarketCap: toBigInt(boundingCurves.maximumMarketCap),
       },
-      marketCap: toBigInt(lastSwap.marketCap),
-      volumeIn: sum(
-        caseWhen(
-          and(eq(swaps.tradeDirection, 0), lt(swaps.timestamp, from)),
-          toBigInt(swaps.amountIn)
-        )
+      marketCap: coalesce(toBigInt(lastSwap.marketCap), 0),
+      volumeIn: coalesce(
+        sum(
+          caseWhen(
+            and(eq(swaps.tradeDirection, 0), lt(swaps.timestamp, from)),
+            toBigInt(swaps.amountIn)
+          )
+        ),
+        0
       ).as("volume_in"),
-      volumeOut: sum(
-        caseWhen(
-          and(eq(swaps.tradeDirection, 1), lt(swaps.timestamp, from)),
-          toBigInt(swaps.amountOut)
-        )
+      volumeOut: coalesce(
+        sum(
+          caseWhen(
+            and(eq(swaps.tradeDirection, 1), lt(swaps.timestamp, from)),
+            toBigInt(swaps.amountOut)
+          )
+        ),
+        0
       ),
-      volumeInFrom: sum(
-        caseWhen(
-          and(
-            eq(swaps.tradeDirection, 0),
-            gte(swaps.timestamp, from),
-            lte(swaps.timestamp, to)
-          ),
-          toBigInt(swaps.amountIn)
-        )
+      volumeInFrom: coalesce(
+        sum(
+          caseWhen(
+            and(
+              eq(swaps.tradeDirection, 0),
+              gte(swaps.timestamp, from),
+              lte(swaps.timestamp, to)
+            ),
+            toBigInt(swaps.amountIn)
+          )
+        ),
+        0
       ),
-      volumeOutFrom: sum(
-        caseWhen(
-          and(
-            eq(swaps.tradeDirection, 1),
-            gte(swaps.timestamp, from),
-            lte(swaps.timestamp, to)
-          ),
-          toBigInt(swaps.amountOut)
-        )
+      volumeOutFrom: coalesce(
+        sum(
+          caseWhen(
+            and(
+              eq(swaps.tradeDirection, 1),
+              gte(swaps.timestamp, from),
+              lte(swaps.timestamp, to)
+            ),
+            toBigInt(swaps.amountOut)
+          )
+        ),
+        0
       ),
     })
     .from(swaps)
@@ -112,11 +125,13 @@ export const getMintLeaderboard = (id: string) => {
   return db
     .select({
       user: users,
-      volumeIn: sum(
-        caseWhen(eq(swaps.tradeDirection, 0), toBigInt(swaps.amountIn))
+      volumeIn: coalesce(
+        sum(caseWhen(eq(swaps.tradeDirection, 0), toBigInt(swaps.amountIn))),
+        0
       ).as("volume_in"),
-      volumeOut: sum(
-        caseWhen(eq(swaps.tradeDirection, 1), toBigInt(swaps.amountOut))
+      volumeOut: coalesce(
+        sum(caseWhen(eq(swaps.tradeDirection, 1), toBigInt(swaps.amountOut))),
+        0
       ).as("volume_out"),
     })
     .from(swaps)
@@ -128,9 +143,7 @@ export const getMintLeaderboard = (id: string) => {
 export const getMintGraph = (id: string, filter: NonNullable<Filter>) => {
   const to = moment(filter.to);
   const from = moment(filter.from);
-  console.log(
-    buildRange(to, from, filter.unit!)
-  )
+  console.log(buildRange(to, from, filter.unit!));
 
   const range = buildRange(to, from, filter.unit!).map((date) =>
     and(gte(swaps.timestamp, date), lte(swaps.timestamp, date))
@@ -142,9 +155,9 @@ export const getMintGraph = (id: string, filter: NonNullable<Filter>) => {
         ? hour(swaps.timestamp)
         : date(swaps.timestamp)
       ).as("date"),
-      volumeIn: sum(toBigInt(swaps.amountIn)),
-      volumeOut: sum(toBigInt(swaps.amountOut)),
-      marketCap: avg(toBigInt(swaps.marketCap)),
+      volumeIn: coalesce(sum(toBigInt(swaps.amountIn)), 0),
+      volumeOut: coalesce(sum(toBigInt(swaps.amountOut)), 0),
+      marketCap: coalesce(avg(toBigInt(swaps.marketCap)), 0),
     })
     .from(swaps)
     .where(and(eq(swaps.mint, id), or(...range)))

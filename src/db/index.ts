@@ -15,16 +15,17 @@ export const db = buildDB(DB_URL, schema);
 
 export const toBigInt = <T extends Column>(column: T) =>
   sql`('x' || lpad(${column}, 16, '0'))::bit(64)::bigint`;
-
 export const caseWhen = (when: SQL | undefined, then: SQL) =>
   sql`case when ${when} then ${then} end`;
-
 export const sub = <T extends Column | string, U extends Column | string>(
   a: T,
   b: U
 ) => sql`${a} - ${b}`;
-
 export const hour = <T extends Column | string>(column: T) =>
   sql<number>`date_part('hour', ${column})`;
 export const date = <T extends Column | string>(column: T) =>
   sql<number>`date(${column})`;
+export const coalesce = <T extends  SQL>(
+  exp: T,
+  value: string | number
+) => sql`COALESCE(${exp}, ${value})`;
