@@ -78,8 +78,8 @@ async function run() {
   );
 }
 
-// run()
-//   .catch(() => {
-//     process.exit(1);
-//   })
-//   .then(() => console.log("Running worker in background..."));
+run()
+  .catch(() => {
+    process.exit(1);
+  })
+  .then(() => console.log("Running worker in background..."));

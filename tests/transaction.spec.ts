@@ -3,17 +3,17 @@ import { onLogs } from "../src/worker";
 async function main() {
   const connection = new Connection(clusterApiUrl("devnet"));
   const transaction = await connection.getParsedTransaction(
-    "4pZC7kheP4zEQZh8sdQSWmo2Q6G1izUQ88aufih9t3GQPKBf1yumCEjC9yDt4EPKuQKnsfj6e2yXPTaz7KRyUwrW"
+    "9ex7Gm15ucskoPUgyjNbphZpBmA5myPUqaWgdjUkbG4Wiyj8UBVF9rKYV9Hc2xvtFaFHRZM5Pp3WFnBhRNVYzdh"
   );
   const logs = transaction!.meta!.logMessages!;
-  const events = onLogs({
+  const events = await onLogs({
     err: null,
     logs,
     signature:
-      "4pZC7kheP4zEQZh8sdQSWmo2Q6G1izUQ88aufih9t3GQPKBf1yumCEjC9yDt4EPKuQKnsfj6e2yXPTaz7KRyUwrW",
+      "9ex7Gm15ucskoPUgyjNbphZpBmA5myPUqaWgdjUkbG4Wiyj8UBVF9rKYV9Hc2xvtFaFHRZM5Pp3WFnBhRNVYzdh",
   });
 
-  
+  console.log("Fuck")
 }
 
 main();
