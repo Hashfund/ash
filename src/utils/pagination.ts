@@ -1,16 +1,27 @@
 import { FastifyRequest } from "fastify";
+import { z } from "zod";
 
 export type LimitOffsetPaginationQuery = {
   offset: number;
   limit: number;
 };
 
+export const limitOffsetPaginationSchema = z.object({
+  limit: z.number().optional(),
+  offset: z.number().optional(),
+});
+
 export class LimitOffsetPagination {
-  constructor(
-    private readonly url: string,
-    readonly limit: number,
-    private readonly offset: number
-  ) {}
+  static LIMIT = 16;
+  static OFFSET = 0;
+
+  readonly limit: number;
+  private readonly offset: number;
+
+  constructor(private readonly url: string, limit?: number, offset?: number) {
+    this.limit = limit ?? LimitOffsetPagination.LIMIT;
+    this.offset = offset ?? LimitOffsetPagination.OFFSET;
+  }
 
   nextURL() {
     const q = new URLSearchParams();

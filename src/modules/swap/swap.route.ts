@@ -1,90 +1,48 @@
 import { z } from "zod";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
+import { zIsAddress } from "db/zod";
 import {
   buildURLFromRequest,
   LimitOffsetPagination,
-  LimitOffsetPaginationQuery,
+  limitOffsetPaginationSchema,
 } from "utils/pagination";
-import { getAllSwapByMint, getSwapsGraphByMint, getSwapsVolumeGraphByMint } from "./swap.controller";
+import { getAllSwapByMint } from "./swap.controller";
 
-type GetAllSwapByMintParams = {
-  mint: string;
-};
+const getAllSwapByMintSchema = z.object({
+  mint: zIsAddress,
+});
 
 const getAllSwapByMintRoute = async function (
   req: FastifyRequest<{
-    Params: GetAllSwapByMintParams;
-    Querystring: LimitOffsetPaginationQuery;
-  }>
-) {
-  const mint = req.params.mint;
-  const { limit, offset } = req.query;
-  const paginator = new LimitOffsetPagination(
-    buildURLFromRequest(req),
-    limit ?? 16,
-    offset ?? 0
-  );
-  return paginator.getResponse(
-    await getAllSwapByMint(mint, paginator.limit, paginator.getOffset())
-  );
-};
-
-type SwapGraphQuery = {
-  to: string;
-  from: string;
-  type?: "volume" | "marketcap";
-};
-
-type SwapGraphParams = {
-  mint: string;
-};
-
-const QuerySchema = z.object({
-  from: z
-    .string({
-      invalid_type_error: "Invalid date format",
-      required_error: "from is required in query",
-    })
-    .datetime(),
-  to: z
-    .string({
-      invalid_type_error: "Invalid date format",
-      required_error: "to is required in query",
-    })
-    .datetime(),
-});
-
-const getSwapsGraphByMintRoutes = function (
-  req: FastifyRequest<{ Querystring: SwapGraphQuery; Params: SwapGraphParams }>,
+    Params: z.infer<typeof getAllSwapByMintSchema>;
+    Querystring: z.infer<typeof limitOffsetPaginationSchema>;
+  }>,
   reply: FastifyReply
 ) {
-  const { mint } = req.params;
-  const type = req.query.type ?? "marketcap";
-
-  return QuerySchema.parseAsync(req.query)
-    .then((query) =>
-      type === "marketcap"
-        ? getSwapsGraphByMint(mint, new Date(query.from), new Date(query.to))
-        : getSwapsVolumeGraphByMint(mint, new Date(query.from), new Date(query.to))
-    )
-    .catch((error) =>
-      reply.status(400).send({
-        error: error.format(),
-      })
-    );
+  return getAllSwapByMintSchema
+    .parseAsync(req.params)
+    .then(({ mint }) => {
+      return limitOffsetPaginationSchema
+        .parseAsync(req.query)
+        .then(async ({ limit, offset }) => {
+          const paginator = new LimitOffsetPagination(
+            buildURLFromRequest(req),
+            limit,
+            offset
+          );
+          return paginator.getResponse(
+            await getAllSwapByMint(mint, paginator.limit, paginator.getOffset())
+          );
+        });
+    })
+    .catch((error) => reply.status(404).send(error));
 };
 
 export const swapRoutes = (fastify: FastifyInstance) => {
-  fastify
-    .route({
-      method: "GET",
-      url: "/swaps/:mint/",
-      handler: getAllSwapByMintRoute,
-    })
-    .route({
-      method: "GET",
-      url: "/swaps/graph/:mint",
-      handler: getSwapsGraphByMintRoutes,
-    });
+  fastify.route({
+    method: "GET",
+    url: "/swaps/:mint/",
+    handler: getAllSwapByMintRoute,
+  });
 };

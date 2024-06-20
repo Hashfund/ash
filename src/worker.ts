@@ -3,9 +3,11 @@ import { HASHFUND_PROGRAM_ID } from "@hashfund/program";
 import { Connection, Logs } from "@solana/web3.js";
 
 import { parseLogs } from "utils/log";
-import { createMint } from "modules/mint/mint.controller";
-import { createBoundingCurve, createSwap } from "modules/swap/swap.controller";
 import { HTTP_RPC_ENDPOINT, WSS_RPC_ENDPOINT } from "config";
+
+import { createMint } from "modules/mint/mint.controller";
+import { getOrCreateUser } from "modules/user/user.controller";
+import { createBoundingCurve, createSwap } from "modules/swap/swap.controller";
 
 const onLogs = async ({ logs, signature }: Logs) => {
   const event = parseLogs(logs);
@@ -13,6 +15,8 @@ const onLogs = async ({ logs, signature }: Logs) => {
   if (event.Mint && event.MintTo) {
     let mintData = event.Mint;
     let mintToData = event.MintTo;
+
+    await getOrCreateUser(mintData.creator.toBase58());
 
     await createMint({
       id: mintData.mint.toBase58(),
@@ -42,6 +46,8 @@ const onLogs = async ({ logs, signature }: Logs) => {
 
   if (event.Swap) {
     const data = event.Swap;
+
+    await getOrCreateUser(data.payer.toBase58());
 
     await createSwap({
       mint: data.mint.toBase58(),

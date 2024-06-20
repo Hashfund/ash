@@ -10,8 +10,10 @@ import {
   lte,
   ne,
   or,
+  SQL,
   SQLWrapper,
 } from "drizzle-orm";
+import { Sql } from "postgres";
 
 export const Grammer = {
   eq,
@@ -30,36 +32,43 @@ export const mapFilters = function (
   filters: string[],
   value: any
 ) {
-  const queries: SQLWrapper[] = [];
+  const queries: SQL[] = [];
+
+  if (filters.length === 0) return eq(column, value);
 
   for (const filter of filters) {
     if (filter in Grammer) {
-      const grammer: SQLWrapper = Grammer[
-        filter as unknown as keyof typeof Grammer
-      ](column, value);
+      const grammer = Grammer[filter as unknown as keyof typeof Grammer](
+        column,
+        value
+      );
       queries.push(grammer);
+    } else {
+      queries.push(eq(column, value));
     }
   }
 
-  if (queries.length > 0) or(...queries);
-  return queries;
+  if (queries.length > 0) return or(...queries);
+  return queries.at(0);
 };
 
 export type QueryBuilder = {
-  [key: string]: (filter: string[], value: any) => SQLWrapper[];
+  [key: string]: (filter: string[], value: any) => SQL | undefined;
 };
 
-export const buildQuery = <T extends QueryBuilder>(
-  builder: T,
-  query: Record<string, any>
-) => {
-  const sqlWrappers: SQLWrapper[] = [];
+export const queryBuilder = <T extends QueryBuilder>(builder: T) => {
+  return (query: Record<string, any>) => {
+    const sqlWrappers: (SQL | undefined)[] = [];
 
-  for (const [key, value] of Object.entries(query)) {
-    const [column, ...filters] = key.split("__");
-    sqlWrappers.push(...builder[column](filters, value));
-  }
-  if (sqlWrappers.length > 0) return and(...sqlWrappers);
+    for (const [key, value] of Object.entries(query)) {
+      const [column, ...filters] = key.split("__");
+      if (column in builder) {
+        const results = builder[column](filters, value);
+        sqlWrappers.push(results);
+      }
+    }
+    if (sqlWrappers.length > 0) return and(...sqlWrappers);
 
-  return sqlWrappers;
+    return sqlWrappers.at(0);
+  };
 };

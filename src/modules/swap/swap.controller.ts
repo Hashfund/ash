@@ -1,8 +1,7 @@
-import { BN } from "bn.js";
 import type { z } from "zod";
-import { and, desc, eq, gte, lte } from "drizzle-orm";
+import { desc, eq, sql, sum } from "drizzle-orm";
 
-import { db } from "../../db";
+import { caseWhen, db, toBigInt } from "../../db";
 import { boundingCurves, swaps } from "../../db/schema";
 import type { insertBoundingCurveSchema, insertSwapSchema } from "../../db/zod";
 
@@ -21,80 +20,29 @@ export const getAllSwapByMint = function (
   limit: number,
   offset: number
 ) {
-  return db.query.swaps.findMany({
-    where: eq(swaps.mint, mint),
-    orderBy: desc(swaps.timestamp),
-    limit,
-    offset,
-  });
-};
-
-export const getLastestSwapByMint = function (mint: string) {
-  return db.query.swaps.findFirst({
-    where: eq(swaps.mint, mint),
-    orderBy: desc(swaps.timestamp),
-  });
-};
-
-export const getSwapsGraphByMint = async function (
-  mint: string,
-  from: Date,
-  to: Date
-) {
-  const response = await db
+  const lastSwap = db
     .select({
-      x: swaps.timestamp,
-      y: swaps.marketCap,
+      mint: swaps.mint,
+      marketCap: toBigInt(swaps.marketCap).as("lastSwap.market_cap"),
     })
     .from(swaps)
-    .where(
-      and(
-        eq(swaps.mint, mint),
-        gte(swaps.timestamp, from),
-        lte(swaps.timestamp, to)
-      )
-    )
+    .where(eq(swaps.mint, mint))
     .orderBy(desc(swaps.timestamp))
-    .execute();
+    .limit(1)
+    .as("lastSwap");
 
-  return response.map(({ x, y }) => ({
-    x,
-    y: new BN(y, "hex").div(new BN(10).pow(new BN(9))),
-  }));
-};
-
-export const getSwapsVolumeGraphByMint = async function (
-  mint: string,
-  from: Date,
-  to: Date
-) {
-  const dates: Date[] = [];
-  while (from <= to) {
-    dates.push(new Date(from));
-    from.setDate(from.getDate() + 1);
-  }
-
-  const results = [];
-
-  for (const date of dates) {
-    const response = await db
-      .select({
-        amountIn: swaps.amountIn,
-      })
-      .from(swaps)
-      .where(and(eq(swaps.mint, mint), gte(swaps.timestamp, date)))
-      .orderBy(swaps.timestamp)
-      .execute();
-
-    results.push({
-      x: date,
-      y: response
-        .map(({ amountIn }) =>
-          new BN(amountIn, "hex").div(new BN(10).pow(new BN(9)))
-        )
-        .reduce((a, b) => a.add(b), new BN(0)),
-    });
-  }
-
-  return results;
+  return db
+    .select({
+      marketCap: lastSwap.marketCap,
+      timestamp: sql`date(${swaps.timestamp})`.as("date"),
+      volumeIn: sum(
+        caseWhen(eq(swaps.tradeDirection, 0), toBigInt(swaps.amountIn))
+      ),
+    })
+    .from(swaps)
+    .rightJoin(lastSwap, eq(swaps.mint, lastSwap.mint))
+    .where(eq(swaps.mint, mint))
+    .orderBy(desc(sql`date`))
+    .limit(limit)
+    .offset(offset);
 };
