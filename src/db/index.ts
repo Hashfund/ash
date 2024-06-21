@@ -25,7 +25,7 @@ export const hour = <T extends Column | string>(column: T) =>
   sql<number>`date_part('hour', ${column})`;
 export const date = <T extends Column | string>(column: T) =>
   sql<number>`date(${column})`;
-export const coalesce = <T extends  SQL>(
+export const coalesce = <T extends SQL, U extends number | string>(
   exp: T,
-  value: string | number
-) => sql`COALESCE(${exp}, ${value})`;
+  value: U
+) => sql<U | number>`COALESCE(${exp}, ${value})`;

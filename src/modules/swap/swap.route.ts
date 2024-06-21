@@ -7,42 +7,71 @@ import {
   LimitOffsetPagination,
   limitOffsetPaginationSchema,
 } from "utils/pagination";
-import { getAllSwapByMint } from "./swap.controller";
+import { getAllSwapByMint, getAllSwaps } from "./swap.controller";
+import { swapQuery } from "./swap.query";
+import { dateRangeSchema } from "utils/date";
 
-const getAllSwapByMintSchema = z.object({
+const getAllSwapsRoute = async function (
+  req: FastifyRequest<{
+    Querystring: z.infer<typeof limitOffsetPaginationSchema> &
+      Record<string, string>;
+  }>
+) {
+  const { limit, offset, ...rest } = req.query;
+
+  return limitOffsetPaginationSchema
+    .parseAsync({ limit, offset })
+    .then(async ({ limit, offset }) => {
+      const paginator = new LimitOffsetPagination(
+        buildURLFromRequest(req),
+        limit,
+        offset
+      );
+      return paginator.getResponse(
+        await getAllSwaps(
+          paginator.limit,
+          paginator.getOffset(),
+          swapQuery(rest)
+        )
+      );
+    });
+};
+
+const getAllSwapByMintParamsSchema = z.object({
   mint: zIsAddress,
 });
 
+const getAllSwapsByMintQuerySchema = z.object(dateRangeSchema);
+
 const getAllSwapByMintRoute = async function (
   req: FastifyRequest<{
-    Params: z.infer<typeof getAllSwapByMintSchema>;
-    Querystring: z.infer<typeof limitOffsetPaginationSchema>;
+    Params: z.infer<typeof getAllSwapByMintParamsSchema>;
+    Querystring: z.infer<typeof getAllSwapsByMintQuerySchema>;
   }>,
   reply: FastifyReply
 ) {
-  return getAllSwapByMintSchema
+  return getAllSwapByMintParamsSchema
     .parseAsync(req.params)
     .then(({ mint }) => {
-      return limitOffsetPaginationSchema
+      return getAllSwapsByMintQuerySchema
         .parseAsync(req.query)
-        .then(async ({ limit, offset }) => {
-          const paginator = new LimitOffsetPagination(
-            buildURLFromRequest(req),
-            limit,
-            offset
-          );
-          return paginator.getResponse(
-            await getAllSwapByMint(mint, paginator.limit, paginator.getOffset())
-          );
+        .then(async ({ from, to }) => {
+          return getAllSwapByMint(mint, from, to);
         });
     })
     .catch((error) => reply.status(404).send(error));
 };
 
 export const swapRoutes = (fastify: FastifyInstance) => {
-  fastify.route({
-    method: "GET",
-    url: "/swaps/:mint/",
-    handler: getAllSwapByMintRoute,
-  });
+  fastify
+    .route({
+      method: "GET",
+      url: "/swaps/",
+      handler: getAllSwapsRoute,
+    })
+    .route({
+      method: "GET",
+      url: "/swaps/:mint/",
+      handler: getAllSwapByMintRoute,
+    });
 };

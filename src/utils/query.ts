@@ -1,4 +1,3 @@
-import { swaps } from "db/schema";
 import {
   and,
   Column,
@@ -11,9 +10,7 @@ import {
   ne,
   or,
   SQL,
-  SQLWrapper,
 } from "drizzle-orm";
-import { Sql } from "postgres";
 
 export const Grammer = {
   eq,
@@ -25,31 +22,27 @@ export const Grammer = {
   ne,
 };
 
-swaps.id;
+export const mapFilters = function (column: Column) {
+  return (filters: string[], value: any) => {
+    const queries: SQL[] = [];
 
-export const mapFilters = function (
-  column: Column,
-  filters: string[],
-  value: any
-) {
-  const queries: SQL[] = [];
+    if (filters.length === 0) return eq(column, value);
 
-  if (filters.length === 0) return eq(column, value);
-
-  for (const filter of filters) {
-    if (filter in Grammer) {
-      const grammer = Grammer[filter as unknown as keyof typeof Grammer](
-        column,
-        value
-      );
-      queries.push(grammer);
-    } else {
-      queries.push(eq(column, value));
+    for (const filter of filters) {
+      if (filter in Grammer) {
+        const grammer = Grammer[filter as unknown as keyof typeof Grammer](
+          column,
+          value
+        );
+        queries.push(grammer);
+      } else {
+        queries.push(eq(column, value));
+      }
     }
-  }
 
-  if (queries.length > 0) return or(...queries);
-  return queries.at(0);
+    if (queries.length > 0) return or(...queries);
+    return queries.at(0);
+  };
 };
 
 export type QueryBuilder = {

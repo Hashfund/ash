@@ -6,11 +6,10 @@ import {
   desc,
   eq,
   getTableColumns,
+  gt,
   gte,
   lt,
   lte,
-  or,
-  sql,
   SQL,
   sum,
 } from "drizzle-orm";
@@ -153,24 +152,44 @@ export const getMintLeaderboard = (id: string) => {
 export const getMintGraph = (id: string, filter: NonNullable<Filter>) => {
   const to = moment(filter.to);
   const from = moment(filter.from);
-  console.log(buildRange(to, from, filter.unit!));
 
-  const range = buildRange(to, from, filter.unit!).map((date) =>
-    and(gte(swaps.timestamp, date), lte(swaps.timestamp, date))
+  const range = buildRange(from, to, filter.unit!).map(
+    ([from, to]) =>
+      [from, and(lte(swaps.timestamp, from), gt(swaps.timestamp, to))] as const
   );
 
-  return db
-    .select({
-      date: (filter.unit === "time"
-        ? hour(swaps.timestamp)
-        : date(swaps.timestamp)
-      ).as("date"),
-      volumeIn: coalesce(sum(toBigInt(swaps.amountIn)), 0),
-      volumeOut: coalesce(sum(toBigInt(swaps.amountOut)), 0),
-      marketCap: coalesce(avg(toBigInt(swaps.marketCap)), 0),
-    })
-    .from(swaps)
-    .where(and(eq(swaps.mint, id), or(...range)))
-    .orderBy(sql`date`)
-    .groupBy(sql`date`);
+  const dateColumn =
+    filter.unit === "time" ? hour(swaps.timestamp) : date(swaps.timestamp);
+
+  return Promise.all(
+    range.map(async ([date, where]) => ({
+      date: date.toISOString(),
+      ...((
+        await db
+          .select({
+            volumeIn: coalesce(
+              sum(
+                caseWhen(eq(swaps.tradeDirection, 0), toBigInt(swaps.amountIn))
+              ),
+              0
+            ),
+            volumeOut: coalesce(
+              sum(
+                caseWhen(eq(swaps.tradeDirection, 1), toBigInt(swaps.amountOut))
+              ),
+              0
+            ),
+          })
+          .from(swaps)
+          .where(and(eq(swaps.mint, id), where))
+          .orderBy(dateColumn)
+          .groupBy(dateColumn)
+          .execute()
+      ).at(0) ?? {
+        date: date.toISOString(),
+        volumeIn: "0",
+        volumeOut: "0",
+      }),
+    }))
+  );
 };

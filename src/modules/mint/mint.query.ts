@@ -6,7 +6,7 @@ import { mapFilters, queryBuilder } from "utils/query";
 import { getAllMint, getMintLeaderboard } from "./mint.controller";
 
 export const mintQuery = queryBuilder({
-  canTrade: (filters, value) => mapFilters(mints.canTrade, filters, value),
+  canTrade: mapFilters(mints.canTrade),
 });
 
 export const orderMintsBy = (

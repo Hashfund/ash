@@ -1,9 +1,10 @@
 import type { z } from "zod";
-import { desc, eq, sql, sum } from "drizzle-orm";
+import { and, desc, eq, gte, lte, SQL } from "drizzle-orm";
 
-import { caseWhen, coalesce, db, toBigInt } from "db";
+import { db, toBigInt } from "db";
 import { boundingCurves, swaps } from "db/schema";
 import type { insertBoundingCurveSchema, insertSwapSchema } from "db/zod";
+import moment from "moment";
 
 export const createBoundingCurve = function (
   value: z.infer<typeof insertBoundingCurveSchema>
@@ -15,35 +16,47 @@ export const createSwap = function (value: z.infer<typeof insertSwapSchema>) {
   return db.insert(swaps).values(value).returning();
 };
 
+export const getAllSwaps = function (
+  limit: number,
+  offset: number,
+  where?: SQL
+) {
+  return db.query.swaps.findMany({
+    where,
+    limit,
+    offset,
+    with: {
+      payer: true,
+    },
+    extras: {
+      amountIn: toBigInt(swaps.amountIn).as("amount_in"),
+      amountOut: toBigInt(swaps.amountOut).as("amount_out"),
+      marketCap: toBigInt(swaps.marketCap).as("market_cap"),
+    },
+    orderBy: desc(swaps.timestamp),
+  });
+};
+
 export const getAllSwapByMint = function (
   mint: string,
-  limit: number,
-  offset: number
+  from?: string,
+  to?: string
 ) {
-  const lastSwap = db
-    .select({
-      mint: swaps.mint,
-      marketCap: toBigInt(swaps.marketCap).as("lastSwap.market_cap"),
-    })
-    .from(swaps)
-    .where(eq(swaps.mint, mint))
-    .orderBy(desc(swaps.timestamp))
-    .limit(1)
-    .as("lastSwap");
-
   return db
     .select({
-      marketCap: lastSwap.marketCap,
-      timestamp: sql`date(${swaps.timestamp})`.as("date"),
-      volumeIn: coalesce(
-        sum(caseWhen(eq(swaps.tradeDirection, 0), toBigInt(swaps.amountIn))),
-        0
-      ),
+      date: swaps.timestamp,
+      marketCap: toBigInt(swaps.marketCap),
     })
     .from(swaps)
-    .rightJoin(lastSwap, eq(swaps.mint, lastSwap.mint))
-    .where(eq(swaps.mint, mint))
-    .orderBy(desc(sql`date`))
-    .limit(limit)
-    .offset(offset);
+    .where(
+      and(
+        eq(swaps.mint, mint),
+        ...(from && to
+          ? [
+              gte(swaps.timestamp, moment(from).toDate()),
+              lte(swaps.timestamp, moment(to).toDate()),
+            ]
+          : [])
+      )
+    );
 };
