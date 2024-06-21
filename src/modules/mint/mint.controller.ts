@@ -38,12 +38,13 @@ export const createMintsQuery = (filter: Filter) => {
     : moment().subtract(1, "day").toDate();
 
   const qLastSwap = db
-    .select({
+    .selectDistinctOn([swaps.mint], {
       mint: swaps.mint,
       marketCap: swaps.marketCap,
     })
+
     .from(swaps)
-    .orderBy(desc(swaps.timestamp))
+    .orderBy(swaps.mint, desc(swaps.timestamp))
     .as("qLastSwap");
 
   const qSwaps = db

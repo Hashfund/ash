@@ -11,6 +11,7 @@ import { createBoundingCurve, createSwap } from "modules/swap/swap.controller";
 
 export const onLogs = async ({ logs, signature }: Logs) => {
   const event = parseLogs(logs);
+  console.log(event.Swap?.mint.toBase58())
 
   if (event.Mint && event.MintTo) {
     let mintData = event.Mint;
@@ -78,8 +79,8 @@ async function run() {
   );
 }
 
-run()
-  .catch(() => {
-    process.exit(1);
-  })
-  .then(() => console.log("Running worker in background..."));
+// run()
+//   .catch(() => {
+//     process.exit(1);
+//   })
+//   .then(() => console.log("Running worker in background..."));
