@@ -6,6 +6,7 @@ import {
   getAllUsers,
   getOrCreateUser,
   getUsersLeaderboard,
+  getUserTokens,
   updateUser,
 } from "./user.controller";
 import { insertUserSchema, zIsAddress } from "db/zod";
@@ -15,6 +16,11 @@ import {
   LimitOffsetPaginationQuery,
   limitOffsetPaginationSchema,
 } from "utils/pagination";
+import { safeRequest } from "utils/metadata";
+
+const IdParamSchema = z.object({
+  id: zIsAddress,
+});
 
 const getAllUsersRoute = async (
   req: FastifyRequest<{
@@ -41,16 +47,11 @@ const getAllUsersRoute = async (
     .catch((error) => reply.status(400).send(error.format()));
 };
 
-const getOrCreateUserParamSchema = z.object({
-  id: zIsAddress,
-});
-
 const getOrCreateUserRoute = (
-  req: FastifyRequest<{ Params: z.infer<typeof getOrCreateUserParamSchema> }>,
+  req: FastifyRequest<{ Params: z.infer<typeof IdParamSchema> }>,
   reply: FastifyReply
 ) => {
-  return getOrCreateUserParamSchema
-    .parseAsync(req.params)
+  return IdParamSchema.parseAsync(req.params)
     .then(async (params) => {
       const q = userQuery(params);
       const [user] = await getOrCreateUser(params.id);
@@ -59,16 +60,11 @@ const getOrCreateUserRoute = (
     .catch((error) => reply.status(400).send(error.format()));
 };
 
-const updateUserSchema = z.object({
-  id: zIsAddress,
-});
-
 const updateUserRoute = (
-  req: FastifyRequest<{ Params: z.infer<typeof updateUserSchema> }>,
+  req: FastifyRequest<{ Params: z.infer<typeof IdParamSchema> }>,
   reply: FastifyReply
 ) => {
-  return updateUserSchema
-    .parseAsync(req.params)
+  return IdParamSchema.parseAsync(req.params)
     .then(({ id }) => {
       return insertUserSchema.parseAsync(req.body).then(async (body) => {
         const users = await updateUser(id, body);
@@ -82,6 +78,39 @@ const updateUserRoute = (
 };
 
 const getUsersLeaderboardRoute = () => getUsersLeaderboard();
+
+const getUserTokensRoute = (
+  req: FastifyRequest<{
+    Params: z.infer<typeof IdParamSchema> &
+      z.infer<typeof limitOffsetPaginationSchema>;
+  }>
+) => {
+  return IdParamSchema.parseAsync(req.params).then(({ id }) =>
+    limitOffsetPaginationSchema
+      .parseAsync(req.query)
+      .then(async ({ limit, offset }) => {
+        const paginator = new LimitOffsetPagination(
+          buildURLFromRequest(req),
+          limit,
+          offset
+        );
+        const tokens = await getUserTokens(
+          id,
+          paginator.limit,
+          paginator.getOffset()
+        );
+
+        return paginator.getResponse(
+          await Promise.all(
+            tokens.map(async (token) => ({
+              ...token,
+              metadata: await safeRequest(token.uri),
+            }))
+          )
+        );
+      })
+  );
+};
 
 export const userRoutes = (fastify: FastifyInstance) => {
   fastify
@@ -104,5 +133,10 @@ export const userRoutes = (fastify: FastifyInstance) => {
       method: "GET",
       url: "/users/leaderboard",
       handler: getUsersLeaderboardRoute,
+    })
+    .route({
+      method: "GET",
+      url: "/users/:id/tokens",
+      handler: getUserTokensRoute,
     });
 };

@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { desc, eq, sql, SQL, sum } from "drizzle-orm";
+import { desc, eq, getTableColumns, sql, SQL, sum } from "drizzle-orm";
 
-import { swaps, users } from "db/schema";
+import { mints, swaps, users } from "db/schema";
 import { insertUserSchema } from "db/zod";
 import { caseWhen, coalesce, db, toBigInt } from "db";
 
@@ -67,5 +67,17 @@ export const getUsersLeaderboard = () => {
     .rightJoin(users, eq(users.id, swaps.payer))
     .groupBy(swaps.payer, users.id)
     .orderBy(desc(sql`volume_in`))
+    .execute();
+};
+
+export const getUserTokens = (id: string, limit: number, offset: number) => {
+  return db
+    .selectDistinctOn([swaps.mint], { ...getTableColumns(mints) })
+    .from(swaps)
+    .where(eq(swaps.payer, id))
+    .orderBy(swaps.mint)
+    .rightJoin(mints, eq(mints.id, swaps.mint))
+    .limit(limit)
+    .offset(offset)
     .execute();
 };

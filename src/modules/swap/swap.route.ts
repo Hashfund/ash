@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 import { zIsAddress } from "db/zod";
+import { dateRangeSchema } from "utils/date";
 import {
   buildURLFromRequest,
   LimitOffsetPagination,
@@ -9,7 +10,6 @@ import {
 } from "utils/pagination";
 import { getAllSwapByMint, getAllSwaps } from "./swap.controller";
 import { swapQuery } from "./swap.query";
-import { dateRangeSchema } from "utils/date";
 
 const getAllSwapsRoute = async function (
   req: FastifyRequest<{
