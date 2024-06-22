@@ -17,8 +17,9 @@ import {
   limitOffsetPaginationSchema,
 } from "utils/pagination";
 import { safeRequest } from "utils/metadata";
+import { imagekit } from "modules/asset/asset.route";
 
-const IdParamSchema = z.object({
+const idParamSchema = z.object({
   id: zIsAddress,
 });
 
@@ -48,10 +49,11 @@ const getAllUsersRoute = async (
 };
 
 const getOrCreateUserRoute = (
-  req: FastifyRequest<{ Params: z.infer<typeof IdParamSchema> }>,
+  req: FastifyRequest<{ Params: z.infer<typeof idParamSchema> }>,
   reply: FastifyReply
 ) => {
-  return IdParamSchema.parseAsync(req.params)
+  return idParamSchema
+    .parseAsync(req.params)
     .then(async (params) => {
       const q = userQuery(params);
       const [user] = await getOrCreateUser(params.id);
@@ -60,32 +62,48 @@ const getOrCreateUserRoute = (
     .catch((error) => reply.status(400).send(error.format()));
 };
 
-const updateUserRoute = (
-  req: FastifyRequest<{ Params: z.infer<typeof IdParamSchema> }>,
+const updateUserRoute = async (
+  req: FastifyRequest<{
+    Params: z.infer<typeof idParamSchema>;
+    Body: z.infer<typeof insertUserSchema>;
+  }>,
   reply: FastifyReply
 ) => {
-  return IdParamSchema.parseAsync(req.params)
-    .then(({ id }) => {
-      return insertUserSchema.parseAsync(req.body).then(async (body) => {
-        const users = await updateUser(id, body);
-        if (users.length > 0) return users.at(0);
-        return reply.status(404).send({
-          error: "user not found",
+  return idParamSchema
+    .parseAsync(req.params)
+    .then(async ({ id }) => {
+      const body = req.body;
+
+      if (body.avatar) {
+        const response = await imagekit.upload({
+          file: body.avatar,
+          fileName: "avatar/" + id + ".png",
+          useUniqueFileName: false,
         });
+
+        body.avatar = response.url;
+      }
+
+      const users = await updateUser(id, body);
+
+      if (users.length > 0) return users.at(0)!;
+
+      return reply.status(404).send({
+        error: "user not found",
       });
     })
-    .catch((error) => reply.status(404).send(error.format()));
+    .catch((error) => reply.status(404).send(error));
 };
 
 const getUsersLeaderboardRoute = () => getUsersLeaderboard();
 
 const getUserTokensRoute = (
   req: FastifyRequest<{
-    Params: z.infer<typeof IdParamSchema> &
+    Params: z.infer<typeof idParamSchema> &
       z.infer<typeof limitOffsetPaginationSchema>;
   }>
 ) => {
-  return IdParamSchema.parseAsync(req.params).then(({ id }) =>
+  return idParamSchema.parseAsync(req.params).then(({ id }) =>
     limitOffsetPaginationSchema
       .parseAsync(req.query)
       .then(async ({ limit, offset }) => {

@@ -8,8 +8,8 @@ import { isAddress } from "utils/web3";
 export const zIsAddress = z.custom<string>((value) => isAddress(value));
 
 export const selectUserSchema = createSelectSchema(users);
-export const insertUserSchema = createInsertSchema(users, {
-  id: zIsAddress,
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
 });
 
 export const selectMintSchema = createSelectSchema(mints);

@@ -1,8 +1,9 @@
 import ImageKit from "imagekit";
-import { IMAGEKIT_PRIVATE_KEY, IMAGEKIT_PUBLIC_KEY } from "config";
 import { FastifyInstance } from "fastify";
+import { IMAGEKIT_PRIVATE_KEY, IMAGEKIT_PUBLIC_KEY } from "config";
 
-var imagekit = new ImageKit({
+
+export const imagekit = new ImageKit({
   publicKey: IMAGEKIT_PUBLIC_KEY,
   privateKey: IMAGEKIT_PRIVATE_KEY,
   urlEndpoint: "https://ik.imagekit.io/hashfund/",

@@ -1,11 +1,7 @@
 import { swaps } from "db/schema";
-import { buildQuery, mapFilters } from "./query";
+import { queryBuilder, mapFilters } from "./query";
 console.log(
-  buildQuery(
-    {
-      timestamp: (filters, value) =>
-        mapFilters(swaps.timestamp, filters, value),
-    },
-    { timestamp__eq: 4 }
-  )
+  queryBuilder({
+    timestamp: mapFilters(swaps.timestamp),
+  })({ timestamp__eq: 4 })
 );

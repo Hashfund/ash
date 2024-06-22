@@ -33,7 +33,10 @@ export const getOrCreateUser = (id: string) => {
   return db
     .insert(users)
     .values({ id })
-    .onConflictDoNothing()
+    .onConflictDoUpdate({
+      target: users.id,
+      set: { id },
+    })
     .returning()
     .execute();
 };
