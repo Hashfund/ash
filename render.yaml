@@ -4,8 +4,8 @@ services:
     runtime: node
     plan: starter
     autoDeploy: true
-    buildCommand: bun install
-    startCommand: bun run migrate && bun run start
+    buildCommand: bun install && bun run build && bun run migrate
+    startCommand: bun run node:start
     envVars:
       - fromGroup: hashfund-ash
       - key: DATABASE_URL
@@ -19,8 +19,8 @@ services:
     name: hashfund-ash-worker
     plan: standard
     autoDeploy: true 
-    buildCommand: bun install
-    startCommand: bun run migrate && bun run worker
+    buildCommand:  bun install
+    startCommand: bun run worker
     envVars:
       - fromGroup: hashfund-ash
       - key: DATABASE_URL
