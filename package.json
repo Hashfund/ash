@@ -3,7 +3,7 @@
   "module": "dist/src/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "node:start": "node -r tsconfig-paths/register -r ts-node/register  dist/index.js",
+    "node:start": "node -r tsconfig-paths/register -r ts-node/register  src/index.ts",
     "start": "bun run src/index.ts",
     "worker": "bun run src/worker.ts",
     "node:worker": "node dist/worker.js",

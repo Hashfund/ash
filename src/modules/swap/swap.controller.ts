@@ -46,6 +46,9 @@ export const getAllSwapByMint = function (
     .select({
       date: swaps.timestamp,
       marketCap: toBigInt(swaps.marketCap),
+      amountIn: toBigInt(swaps.amountIn),
+      amountOut: toBigInt(swaps.amountOut),
+      tradeDirection: swaps.tradeDirection,
     })
     .from(swaps)
     .where(
