@@ -105,11 +105,15 @@ export const createMintsQuery = (filter: Filter) => {
       volumeOut: qSwaps.volumeOut,
       volumeInFrom: qSwaps.volumeInFrom,
       volumeOutFrom: qSwaps.volumeOutFrom,
-      marketCap: toBigInt(qLastSwap.marketCap),
+      marketCap: toBigInt(qLastSwap.marketCap).as('market_cap'),
       boundingCurve: {
         ...getTableColumns(boundingCurves),
-        initialPrice: toBigInt(boundingCurves.initialPrice),
-        maximumMarketCap: toBigInt(boundingCurves.maximumMarketCap),
+        initialPrice: toBigInt(boundingCurves.initialPrice).as(
+          "initial_price"
+        ),
+        maximumMarketCap: toBigInt(boundingCurves.maximumMarketCap).as(
+          "maximum_market_cap"
+        ),
       },
     })
     .from(mints)

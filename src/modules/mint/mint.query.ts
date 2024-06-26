@@ -1,6 +1,6 @@
 import { desc, sql } from "drizzle-orm";
 
-import { mints } from "db/schema";
+import { boundingCurves, mints, swaps } from "db/schema";
 import { mapFilters, queryBuilder } from "utils/query";
 
 import { getAllMint, getMintLeaderboard } from "./mint.controller";
@@ -19,6 +19,12 @@ export const orderMintsBy = (
       return q.orderBy(desc(mints.timestamp));
     case "volumeIn":
       return q.orderBy(desc(sql`volume_in`));
+    case "price":
+      return q.orderBy(desc(boundingCurves.initialPrice));
+    case "maxMarketCap":
+      return q.orderBy(desc(boundingCurves.maximumMarketCap));
+    case "marketCap":
+      return q.orderBy(desc(sql`market_cap`));
     default:
       return q;
   }
